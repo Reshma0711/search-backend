@@ -70,3 +70,46 @@ exports.textIndex = async (req, res) => {
     });
   }
 };
+
+exports.atlasSearch = async (req, res) => {
+  try {
+    const query = req.query.key;
+
+    const results = await Product.aggregate([
+      {
+        $search: {
+          index: "default", // Your Atlas Search Index Name
+          compound: {
+            should: [
+              {
+                autocomplete: { query, path: "name", tokenOrder: "sequential" },
+              },
+              {
+                autocomplete: {
+                  query,
+                  path: "description",
+                  tokenOrder: "sequential",
+                },
+              },
+              {
+                autocomplete: {
+                  query,
+                  path: "category",
+                  tokenOrder: "sequential",
+                },
+              },
+            ],
+          },
+        },
+      },
+      { $limit: 10 }, // Limit results
+    ]);
+
+    res.status(201).json({
+      message: "Successfully searched results based on querykey",
+      results,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
